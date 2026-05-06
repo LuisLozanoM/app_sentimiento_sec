@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App de Sentimiento SEC</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 95%;
+            max-width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #a0b4d0;
+            margin-bottom: 28px;
+        }
+
+        .icon-header {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #c0d0e0;
+        }
+
+        textarea, .upload-area {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.25);
+            color: #f0f0f0;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(74, 158, 255, 0.4);
+            text-align: center;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4a9eff;
+            background: rgba(74, 158, 255, 0.08);
+        }
+
+        .upload-area p {
+            color: #8899aa;
+            font-size: 0.95rem;
+        }
+
+        .upload-area small {
+            color: #667788;
+            font-size: 0.8rem;
+        }
+
+        .doc-display {
+            min-height: 120px;
+            max-height: 250px;
+            resize: vertical;
+            overflow-y: auto;
+        }
+
+        .section-display {
+            min-height: 80px;
+            max-height: 180px;
+            resize: vertical;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+            color: #c0d0e0;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: rgba(74, 158, 255, 0.4);
+            color: #fff;
+        }
+
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4a9eff, #2d6abf);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: transform 0.15s, box-shadow 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(74, 158, 255, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .resultado-box {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 18px;
+            min-height: 60px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #d0e8ff;
+        }
+
+        .resultado-box.vacio {
+            color: #667788;
+            font-style: italic;
+        }
+
+        .sentiment-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sentiment-positive { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); }
+        .sentiment-negative { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); }
+        .sentiment-neutral  { background: rgba(149, 165, 166, 0.2); color: #95a5a6; border: 1px solid rgba(149, 165, 166, 0.4); }
+        .sentiment-unknown  { background: rgba(155, 89, 182, 0.2); color: #9b59b6; border: 1px solid rgba(155, 89, 182, 0.4); }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .modelo-info {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: #556677;
+        }
+
+        .warning {
+            color: #f1c40f;
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-overlay h2 {
+            color: #fff;
+            margin-bottom: 12px;
+            font-size: 1.4rem;
+        }
+
+        .loading-overlay p {
+            color: #a0b4d0;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4a9eff, #2d6abf);
+            transition: width 0.3s;
+        }
+
+        .loading-note {
+            font-size: 0.8rem;
+            color: #667788;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        #main-ui.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de carga del modelo -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="icon-header">📊</div>
+        <h2>Cargando modelo Qwen2-0.5B...</h2>
+        <p id="loading-status">Iniciando descarga del modelo...</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="loading-note">La primera carga descarga el modelo (~300 MB). Después se usa desde caché.</p>
+    </div>
+
+    <!-- Interfaz principal -->
+    <div id="main-ui" class="hidden">
+        <div class="container">
+            <div class="icon-header">📊</div>
+            <h1>App de Sentimiento SEC</h1>
+            <p class="subtitle">Analiza el sentimiento de archivos de la SEC con Qwen2-0.5B</p>
+
+            <!-- Área de carga -->
+            <label>1. Sube un archivo de la SEC:</label>
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                <p>📁 Haz clic o arrastra un archivo aquí</p>
+                <small>Formatos soportados: .txt, .html, .htm</small>
+            </div>
+            <input type="file" id="file-input" accept=".txt,.html,.htm" style="display:none">
+
+            <!-- Contenido del documento -->
+            <div id="doc-section" style="margin-top: 20px; display:none;">
+                <label>Contenido del documento:</label>
+                <textarea id="doc-text" class="doc-display" readonly placeholder="El contenido aparecerá aquí..."></textarea>
+            </div>
+
+            <!-- Sección a analizar -->
+            <div id="section-wrapper" style="margin-top: 16px; display:none;">
+                <label>2. Selecciona la sección a analizar:</label>
+                <textarea id="section-text" class="section-display" placeholder="Puedes copiar una sección del documento aquí, o usar todo el contenido..."></textarea>
+                <div class="btn-group">
+                    <button class="btn" onclick="usarTodo()">📄 Usar todo el documento</button>
+                    <button class="btn" onclick="limpiarSeccion()">🗑️ Limpiar selección</button>
+                </div>
+                <p id="char-count" class="warning"></p>
+            </div>
+
+            <!-- Botón analizar -->
+            <button class="btn-primary" id="btn-analizar" onclick="analizar()" disabled>🔍 Analizar Sentimiento</button>
+
+            <!-- Resultados -->
+            <label>Resultado del análisis:</label>
+            <div class="resultado-box vacio" id="resultado">
+                El resultado del análisis aparecerá aquí...
+            </div>
+
+            <p class="modelo-info">Modelo: Qwen2.5-0.5B-Instruct (ONNX q4) | Transformers.js | 100% en el navegador</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const mainUI = document.getElementById('main-ui');
+        const loadingStatus = document.getElementById('loading-status');
+        const progressFill = document.getElementById('progress-fill');
+
+        let generator = null;
+        let fullText = '';
+
+        // Cargar el modelo
+        try {
+            loadingStatus.textContent = 'Descargando e inicializando modelo...';
+
+            generator = await pipeline('text-generation', 'onnx-community/Qwen2.5-0.5B-Instruct', {
+                dtype: 'q4',
+                progress_callback: (progress) => {
+                    if (progress.status === 'progress' && progress.total) {
+                        const pct = Math.round((progress.loaded / progress.total) * 100);
+                        progressFill.style.width = pct + '%';
+                        const mb = (progress.loaded / 1024 / 1024).toFixed(1);
+                        const totalMb = (progress.total / 1024 / 1024).toFixed(1);
+                        loadingStatus.textContent = `Descargando: ${mb} MB / ${totalMb} MB (${pct}%)`;
+                    } else if (progress.status === 'ready') {
+                        loadingStatus.textContent = 'Modelo listo.';
+                        progressFill.style.width = '100%';
+                    }
+                }
+            });
+
+            loadingOverlay.classList.add('hidden');
+            mainUI.classList.remove('hidden');
+        } catch (error) {
+            loadingStatus.textContent = 'Error al cargar el modelo: ' + error.message;
+            progressFill.style.background = '#ff4a4a';
+            progressFill.style.width = '100%';
+            console.error(error);
+        }
+
+        // ============ FILE UPLOAD ============
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const docSection = document.getElementById('doc-section');
+        const docText = document.getElementById('doc-text');
+        const sectionWrapper = document.getElementById('section-wrapper');
+        const sectionText = document.getElementById('section-text');
+        const btnAnalizar = document.getElementById('btn-analizar');
+        const charCount = document.getElementById('char-count');
+
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let text = e.target.result;
+                if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                    text = stripHtml(text);
+                }
+                fullText = text.trim();
+                docText.value = fullText;
+                docSection.style.display = 'block';
+                sectionWrapper.style.display = 'block';
+                sectionText.value = fullText.substring(0, 2000);
+                updateCharCount();
+                btnAnalizar.disabled = false;
+            };
+            reader.readAsText(file);
+        }
+
+        function usarTodo() {
+            sectionText.value = fullText;
+            updateCharCount();
+        }
+
+        function limpiarSeccion() {
+            sectionText.value = '';
+            updateCharCount();
+        }
+
+        sectionText.addEventListener('input', updateCharCount);
+
+        function updateCharCount() {
+            const len = sectionText.value.length;
+            charCount.textContent = len > 4000
+                ? `⚠️ Texto muy largo (${len} caracteres). El modelo puede truncar.`
+                : `${len} caracteres`;
+        }
+
+        window.usarTodo = usarTodo;
+        window.limpiarSeccion = limpiarSeccion;
+
+        // ============ SENTIMENT ANALYSIS ============
+        window.analizar = async function() {
+            if (!generator) return;
+
+            const texto = sectionText.value.trim();
+            const resultado = document.getElementById('resultado');
+            const btn = document.getElementById('btn-analizar');
+
+            if (!texto) {
+                resultado.innerHTML = '<span style="color:#f1c40f">Por favor, selecciona una sección para analizar.</span>';
+                resultado.classList.add('vacio');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Analizando...';
+            resultado.textContent = 'Procesando con el modelo...';
+            resultado.classList.add('vacio');
+
+            try {
+                const messages = [
+                    {
+                        role: 'system',
+                        content: 'You are a financial sentiment analysis expert analyzing SEC filing text. Analyze the sentiment and respond EXACTLY in this format:\nSentiment: [Positive / Negative / Neutral]\nReason: [Brief explanation in Spanish]\n\nBe concise. Only use the format above.'
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze the sentiment of this SEC filing section:\n\n${texto}`
+                    }
+                ];
+
+                const output = await generator(messages, {
+                    max_new_tokens: 128,
+                    temperature: 0.3,
+                    do_sample: true,
+                    top_p: 0.9,
+                    repetition_penalty: 1.2
+                });
+
+                const respuesta = output[0].generated_text.at(-1).content.trim();
+                const parsed = parseSentiment(respuesta);
+                renderResult(parsed);
+            } catch (error) {
+                resultado.innerHTML = `<span style="color:#e74c3c">Error al analizar: ${error.message}</span>`;
+                resultado.classList.add('vacio');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Analizar Sentimiento';
+            }
+        };
+
+        function parseSentiment(text) {
+            const sentimentMatch = text.match(/Sentiment:\s*(Positive|Negative|Neutral)/i);
+            const reasonMatch = text.match(/Reason:\s*(.+?)(?:\n|$)/is);
+
+            return {
+                sentiment: sentimentMatch ? sentimentMatch[1].trim() : 'Unknown',
+                reason: reasonMatch ? reasonMatch[1].trim() : text
+            };
+        }
+
+        function renderResult(parsed) {
+            const resultado = document.getElementById('resultado');
+            const s = parsed.sentiment.toLowerCase();
+            let badgeClass = 'sentiment-unknown';
+            let badgeText = parsed.sentiment;
+
+            if (s === 'positive') { badgeClass = 'sentiment-positive'; badgeText = 'Positivo'; }
+            else if (s === 'negative') { badgeClass = 'sentiment-negative'; badgeText = 'Negativo'; }
+            else if (s === 'neutral') { badgeClass = 'sentiment-neutral'; badgeText = 'Neutral'; }
+
+            resultado.innerHTML = `
+                <div class="sentiment-badge ${badgeClass}">${badgeText}</div>
+                <div><strong>Razón:</strong> ${escapeHtml(parsed.reason)}</div>
+            `;
+            resultado.classList.remove('vacio');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
