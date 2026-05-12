@@ -476,20 +476,19 @@
                 const messages = [
                     {
                         role: 'system',
-                        content: 'You are a financial sentiment analysis expert analyzing SEC filing text. Analyze the sentiment and respond EXACTLY in this format:\nSentiment: [Positive / Negative / Neutral]\nReason: [Brief explanation in Spanish]\n\nBe concise. Only use the format above.'
+                        content: 'You are a financial sentiment analysis expert. Analyze SEC filing text and respond EXACTLY in this format:\n\nSentiment: Positive\nReason: Brief explanation in Spanish\n\nRules:\n- Sentiment MUST be exactly one of: Positive, Negative, Neutral\n- Reason MUST be one short sentence in Spanish\n- Do NOT add extra text, headers, or markdown\n- Follow the format strictly.'
                     },
                     {
                         role: 'user',
-                        content: `Analyze the sentiment of this SEC filing section:\n\n${texto}`
+                        content: `Analyze the sentiment of this SEC filing text:\n\n${texto}`
                     }
                 ];
 
                 const output = await generator(messages, {
-                    max_new_tokens: 128,
-                    temperature: 0.3,
-                    do_sample: true,
-                    top_p: 0.9,
-                    repetition_penalty: 1.2
+                    max_new_tokens: 80,
+                    temperature: 0.2,
+                    do_sample: false,
+                    repetition_penalty: 1.1
                 });
 
                 const respuesta = output[0].generated_text.at(-1).content.trim();
@@ -506,12 +505,30 @@
         };
 
         function parseSentiment(text) {
-            const sentimentMatch = text.match(/Sentiment:\s*(Positive|Negative|Neutral)/i);
-            const reasonMatch = text.match(/Reason:\s*(.+?)(?:\n|$)/is);
+            // Try strict format first
+            let sentimentMatch = text.match(/Sentiment:\s*(Positive|Negative|Neutral)/i);
+            let reasonMatch = text.match(/Reason:\s*(.+?)(?:\n|$)/is);
+
+            // Fallback: look for sentiment keywords anywhere
+            if (!sentimentMatch) {
+                const lower = text.toLowerCase();
+                if (lower.includes('positive') || lower.includes('positivo')) sentimentMatch = [null, 'Positive'];
+                else if (lower.includes('negative') || lower.includes('negativo')) sentimentMatch = [null, 'Negative'];
+                else if (lower.includes('neutral') || lower.includes('neutro')) sentimentMatch = [null, 'Neutral'];
+            }
+
+            // Fallback reason: remove sentiment line and use rest
+            let reason = text;
+            if (reasonMatch) {
+                reason = reasonMatch[1].trim();
+            } else {
+                reason = text.replace(/Sentiment:\s*(Positive|Negative|Neutral)/i, '').replace(/Reason:/i, '').trim();
+                if (!reason) reason = text;
+            }
 
             return {
                 sentiment: sentimentMatch ? sentimentMatch[1].trim() : 'Unknown',
-                reason: reasonMatch ? reasonMatch[1].trim() : text
+                reason: reason
             };
         }
 

@@ -23,9 +23,27 @@ def strip_html(raw_html):
 def parse_sentiment(text):
     sentiment_match = re.search(r'Sentiment:\s*(Positive|Negative|Neutral)', text, re.IGNORECASE)
     reason_match = re.search(r'Reason:\s*(.+?)(?:\n|$)', text, re.IGNORECASE | re.DOTALL)
+
+    if not sentiment_match:
+        lower = text.lower()
+        if 'positive' in lower or 'positivo' in lower:
+            sentiment_match = type('obj', (object,), {'group': lambda x: 'Positive'})()
+        elif 'negative' in lower or 'negativo' in lower:
+            sentiment_match = type('obj', (object,), {'group': lambda x: 'Negative'})()
+        elif 'neutral' in lower or 'neutro' in lower:
+            sentiment_match = type('obj', (object,), {'group': lambda x: 'Neutral'})()
+
+    if reason_match:
+        reason = reason_match.group(1).strip()
+    else:
+        reason = re.sub(r'Sentiment:\s*(Positive|Negative|Neutral)', '', text, flags=re.IGNORECASE)
+        reason = re.sub(r'Reason:', '', reason, flags=re.IGNORECASE).strip()
+        if not reason:
+            reason = text.strip()
+
     return {
         "sentiment": sentiment_match.group(1).strip() if sentiment_match else "Unknown",
-        "reason": reason_match.group(1).strip() if reason_match else text.strip()
+        "reason": reason
     }
 
 
@@ -43,16 +61,19 @@ def analyze():
         return jsonify({"sentiment": "", "reason": ""})
 
     prompt_sistema = (
-        "You are a financial sentiment analysis expert analyzing SEC filing text. "
-        "Analyze the sentiment and respond EXACTLY in this format:\n"
-        "Sentiment: [Positive / Negative / Neutral]\n"
-        "Reason: [Brief explanation in Spanish]\n\n"
-        "Be concise. Only use the format above."
+        "You are a financial sentiment analysis expert. Analyze SEC filing text and respond EXACTLY in this format:\n\n"
+        "Sentiment: Positive\n"
+        "Reason: Brief explanation in Spanish\n\n"
+        "Rules:\n"
+        "- Sentiment MUST be exactly one of: Positive, Negative, Neutral\n"
+        "- Reason MUST be one short sentence in Spanish\n"
+        "- Do NOT add extra text, headers, or markdown\n"
+        "- Follow the format strictly."
     )
 
     messages = [
         {"role": "system", "content": prompt_sistema},
-        {"role": "user", "content": f"Analyze the sentiment of this SEC filing section:\n\n{texto}"},
+        {"role": "user", "content": f"Analyze the sentiment of this SEC filing text:\n\n{texto}"},
     ]
 
     input_text = tokenizer.apply_chat_template(
@@ -63,11 +84,10 @@ def analyze():
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=128,
-            temperature=0.3,
-            do_sample=True,
-            top_p=0.9,
-            repetition_penalty=1.2,
+            max_new_tokens=80,
+            temperature=0.2,
+            do_sample=False,
+            repetition_penalty=1.1,
         )
 
     respuesta = tokenizer.decode(
